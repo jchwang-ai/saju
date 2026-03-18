@@ -17,6 +17,11 @@ const iconMap: Record<string, any> = {
 };
 
 export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, onReset }) => {
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('링크가 복사되었습니다. 친구들에게 공유해보세요!');
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">
       <motion.div
@@ -24,21 +29,60 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
         animate={{ opacity: 1 }}
         className="space-y-12"
       >
-        {/* Header Summary */}
-        <div className="text-center space-y-6">
-          <div className="inline-block px-6 py-2 rounded-full bg-brand-gold/10 border border-brand-gold/30 text-brand-gold font-serif italic">
-            {input.name}님의 명운 리포트
+        {/* Character Card Section */}
+        <div className="grid md:grid-cols-5 gap-8 items-center glass-card p-8 md:p-12 overflow-hidden relative">
+          {/* Background Glow */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand-gold/10 rounded-full blur-[80px]" />
+          
+          <div className="md:col-span-2 relative">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="aspect-square rounded-2xl overflow-hidden border-2 border-brand-gold/30 shadow-2xl shadow-brand-gold/10"
+            >
+              {result.characterImageUrl ? (
+                <img 
+                  src={result.characterImageUrl} 
+                  alt={result.characterType}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-brand-slate flex items-center justify-center text-brand-gold/20">
+                  <User className="w-20 h-20" />
+                </div>
+              )}
+            </motion.div>
           </div>
-          <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight max-w-3xl mx-auto">
-            "{result.summary}"
-          </h2>
-          <div className="flex justify-center gap-4 text-sm text-brand-ink/50">
-            <span>{input.birthDate} {input.birthTime}</span>
-            <span>•</span>
-            <span>{input.calendarType === 'solar' ? '양력' : '음력'}</span>
-            <span>•</span>
-            <span>{input.gender === 'male' ? '남성' : '여성'}</span>
+
+          <div className="md:col-span-3 space-y-6">
+            <div className="space-y-2">
+              <span className="text-brand-gold font-bold tracking-widest text-xs uppercase">Your Character Type</span>
+              <h2 className="text-4xl md:text-5xl font-serif font-bold gold-gradient leading-tight">
+                {result.characterType}
+              </h2>
+            </div>
+            <p className="text-brand-ink/70 text-lg leading-relaxed italic">
+              "{result.summary}"
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium">#사주캐릭터</span>
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium">#운명리포트</span>
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium">#명운</span>
+            </div>
           </div>
+        </div>
+
+        {/* User Info Summary */}
+        <div className="flex justify-center gap-4 text-sm text-brand-ink/50 border-b border-white/5 pb-8">
+          <span>{input.name}님</span>
+          <span>•</span>
+          <span>{input.birthDate} {input.birthTime}</span>
+          <span>•</span>
+          <span>{input.calendarType === 'solar' ? '양력' : '음력'}</span>
+          <span>•</span>
+          <span>{input.gender === 'male' ? '남성' : '여성'}</span>
         </div>
 
         {/* Main Grid */}
@@ -68,7 +112,9 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-12">
+        <div className="text-center space-y-4 pt-12">
+          <p className="text-brand-gold font-medium text-sm">이 결과를 친구들과 공유해보세요!</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button 
             onClick={() => window.print()}
             className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
@@ -81,10 +127,14 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
           >
             <RefreshCw className="w-4 h-4" /> 다시 분석하기
           </button>
-          <button className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold">
+          <button 
+            onClick={handleCopyLink}
+            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
+          >
             <Share2 className="w-4 h-4" /> 결과 공유하기
           </button>
         </div>
+      </div>
 
         {/* Footer Note */}
         <div className="text-center text-xs text-brand-ink/30 max-w-2xl mx-auto leading-relaxed">

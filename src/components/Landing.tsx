@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, ShieldCheck, FileText, Compass } from 'lucide-react';
+import { generateAtmosphereImage } from '../services/geminiService';
 
-export const Header: React.FC<{ onHome: () => void }> = ({ onHome }) => {
+export const Header: React.FC<{ onHome: () => void; onTarot: () => void }> = ({ onHome, onTarot }) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-brand-bg/80 backdrop-blur-md border-b border-white/5">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-brand-bg/90 backdrop-blur-md border-b border-white/10 shadow-lg">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <button 
           onClick={onHome}
@@ -13,72 +14,161 @@ export const Header: React.FC<{ onHome: () => void }> = ({ onHome }) => {
           <div className="w-10 h-10 rounded-full bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20 group-hover:border-brand-gold/40 transition-colors">
             <Sparkles className="w-5 h-5 text-brand-gold" />
           </div>
-          <span className="text-xl font-serif font-bold tracking-widest text-brand-ink">明運</span>
+          <span className="text-xl font-serif font-bold tracking-widest text-white">明運</span>
         </button>
         
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-brand-ink/60">
-          <button onClick={onHome} className="hover:text-brand-gold transition-colors">홈</button>
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-white/70">
+          <button onClick={onHome} className="hover:text-brand-gold transition-colors cursor-pointer">홈</button>
+          <button onClick={onTarot} className="hover:text-brand-gold transition-colors cursor-pointer">오늘의 타로</button>
           <a href="#features" className="hover:text-brand-gold transition-colors">서비스 특징</a>
           <a href="#how-to" className="hover:text-brand-gold transition-colors">이용 방법</a>
         </nav>
         
         <div className="flex items-center gap-4">
-          <span className="text-xs text-brand-gold/60 hidden sm:inline-block font-medium tracking-tighter">PREMIUM SAJU REPORT</span>
+          <span className="text-xs text-brand-gold/80 hidden sm:inline-block font-bold tracking-widest">PREMIUM REPORT</span>
         </div>
       </div>
     </header>
   );
 };
 
-export const Hero: React.FC<{ onStart: () => void }> = ({ onStart }) => {
-  return (
-    <section className="relative pt-40 pb-20 px-6 overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-brand-gold/5 rounded-full blur-[120px]" />
-        <div className="absolute top-40 left-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
-      </div>
+export const Hero: React.FC<{ onSajuStart: () => void; onTarotStart: () => void }> = ({ onSajuStart, onTarotStart }) => {
+  const [sajuImg, setSajuImg] = useState<string>("https://images.unsplash.com/photo-1518544801976-3e159e50e5bb?auto=format&fit=crop&q=80&w=1200");
+  const [tarotImg, setTarotImg] = useState<string>("https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&q=80&w=1200");
 
-      <div className="max-w-4xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+  useEffect(() => {
+    const loadImages = async () => {
+      const sImg = await generateAtmosphereImage("A high-end, luxury oriental traditional painting style background for Saju destiny analysis. Gold and deep ink colors, mystical mountains and clouds, premium texture.");
+      const tImg = await generateAtmosphereImage("A mystical, cosmic, luxury tarot card reading background. Deep indigo and violet colors, sparkling stars, nebula, mysterious and high-end atmosphere.");
+      setSajuImg(sImg);
+      setTarotImg(tImg);
+    };
+    loadImages();
+  }, []);
+
+  return (
+    <section className="relative min-h-[calc(100vh-80px)] flex flex-col md:flex-row overflow-hidden">
+      {/* Central VS Badge */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 hidden md:flex items-center justify-center">
+        <motion.div 
+          initial={{ scale: 0, rotate: -45 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", damping: 12, delay: 0.5 }}
+          className="w-24 h-24 rounded-full bg-white border-8 border-[#f5f2ed] flex items-center justify-center shadow-2xl"
         >
-          <span className="inline-block px-4 py-1.5 rounded-full bg-brand-gold/10 border border-brand-gold/20 text-brand-gold text-xs font-bold tracking-widest mb-8 uppercase">
-            Traditional Wisdom meets Modern Insight
-          </span>
-          <h1 className="text-5xl md:text-7xl font-serif font-bold leading-[1.1] mb-8">
-            당신의 타고난 <span className="gold-gradient">기질</span>과<br />
-            운명의 <span className="gold-gradient">흐름</span>을 읽다
-          </h1>
-          <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed mb-12 max-w-2xl mx-auto">
-            복잡하고 어려운 사주 풀이 대신, <br className="hidden sm:block" />
-            현대적인 감각으로 재해석한 당신만의 프리미엄 사주 리포트를 만나보세요.
-          </p>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onStart}
-            className="gold-button px-10 py-5 rounded-full text-lg font-bold tracking-tight"
-          >
-            내 사주 리포트 확인하기
-          </motion.button>
+          <div className="w-full h-full rounded-full border-2 border-brand-gold flex items-center justify-center bg-brand-bg">
+            <span className="text-2xl font-serif font-bold gold-gradient italic drop-shadow-sm">VS</span>
+          </div>
         </motion.div>
       </div>
 
-      {/* Decorative Elements */}
-      <div className="mt-24 flex justify-center opacity-20">
-        <div className="relative w-64 h-64">
-          <div className="absolute inset-0 border border-brand-gold rounded-full animate-[spin_20s_linear_infinite]" />
-          <div className="absolute inset-4 border border-brand-gold/50 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-          <div className="absolute inset-8 border border-brand-gold/30 rounded-full animate-[spin_10s_linear_infinite]" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-1 h-32 bg-gradient-to-b from-transparent via-brand-gold to-transparent" />
+      {/* Saju Side (Traditional Luxury - Light/Gold) */}
+      <motion.div 
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        whileHover={{ flex: 1.5 }}
+        transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+        className="relative flex-1 flex flex-col items-center justify-center p-8 md:p-12 text-center group cursor-pointer overflow-hidden min-h-[50vh] md:min-h-0 bg-[#f5f2ed]"
+        onClick={onSajuStart}
+      >
+        {/* Background Image with Traditional Texture Overlay */}
+        <div className="absolute inset-0 -z-10">
+          <img 
+            src={sajuImg} 
+            alt="Traditional Saju" 
+            className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-1000 grayscale-[0.2]"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f5f2ed] via-[#f5f2ed]/70 to-transparent" />
+          <div className="absolute inset-0 border-[20px] border-white/30 pointer-events-none" />
+        </div>
+
+        <div className="relative z-10 space-y-8 max-w-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="inline-block px-5 py-1.5 rounded-full bg-brand-gold/20 border border-brand-gold/30 text-brand-gold text-[11px] font-bold tracking-[0.3em] uppercase shadow-sm"
+          >
+            Destiny & Lineage
+          </motion.div>
+          
+          <div className="space-y-4">
+            <h2 className="text-5xl md:text-7xl font-serif font-bold leading-tight text-slate-900 drop-shadow-sm">
+              명품 <span className="gold-gradient-dark">사주</span><br />
+              분석 리포트
+            </h2>
+            <p className="text-slate-800 text-base md:text-lg leading-relaxed font-semibold">
+              수천 년의 지혜가 담긴 명리학으로<br />
+              당신의 인생 지도를 정교하게 그려냅니다.
+            </p>
+          </div>
+
+          <div className="pt-6">
+            <button className="gold-button px-12 py-5 rounded-full text-base font-bold tracking-tight shadow-xl shadow-brand-gold/20 group-hover:shadow-brand-gold/40 transition-all transform group-hover:-translate-y-1">
+              사주 분석 시작하기
+            </button>
           </div>
         </div>
-      </div>
+
+        {/* Traditional Pattern Accent */}
+        <div className="absolute bottom-12 left-12 w-32 h-32 border border-brand-gold/10 rounded-full opacity-50 group-hover:rotate-90 transition-transform duration-1000" />
+      </motion.div>
+
+      {/* Tarot Side (Mystical Luxury - Dark/Indigo) */}
+      <motion.div 
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        whileHover={{ flex: 1.5 }}
+        transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+        className="relative flex-1 flex flex-col items-center justify-center p-8 md:p-12 text-center group cursor-pointer overflow-hidden min-h-[50vh] md:min-h-0 bg-[#050505]"
+        onClick={onTarotStart}
+      >
+        {/* Background Image with Cosmic Overlay */}
+        <div className="absolute inset-0 -z-10">
+          <img 
+            src={tarotImg} 
+            alt="Mystical Tarot" 
+            className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-1000"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-l from-[#050505] via-[#050505]/80 to-transparent" />
+          <div className="absolute inset-0 border-[20px] border-white/5 pointer-events-none" />
+        </div>
+
+        <div className="relative z-10 space-y-8 max-w-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="inline-block px-5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold tracking-[0.3em] uppercase shadow-sm"
+          >
+            Intuition & Magic
+          </motion.div>
+
+          <div className="space-y-4">
+            <h2 className="text-5xl md:text-7xl font-serif font-bold leading-tight text-white drop-shadow-lg">
+              신비한 <span className="text-indigo-400">타로</span><br />
+              오늘의 운세
+            </h2>
+            <p className="text-white/80 text-base md:text-lg leading-relaxed font-semibold drop-shadow-md">
+              당신의 직관이 선택한 한 장의 카드,<br />
+              우주가 전하는 오늘의 특별한 메시지.
+            </p>
+          </div>
+
+          <div className="pt-6">
+            <button className="px-12 py-5 rounded-full bg-indigo-600 text-white font-bold text-base tracking-tight shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 group-hover:shadow-indigo-500/40 transition-all transform group-hover:-translate-y-1">
+              타로 카드 뽑기
+            </button>
+          </div>
+        </div>
+
+        {/* Cosmic Sparkle Accent */}
+        <div className="absolute top-12 right-12 opacity-30 group-hover:scale-125 transition-transform duration-700">
+          <Sparkles className="w-12 h-12 text-indigo-300 animate-pulse" />
+        </div>
+      </motion.div>
     </section>
   );
 };

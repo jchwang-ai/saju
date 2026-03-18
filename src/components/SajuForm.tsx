@@ -146,10 +146,13 @@ export const SajuForm: React.FC<SajuFormProps> = ({ onSubmit, isLoading }) => {
             className="w-full gold-button py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
           >
             {isLoading ? (
-              <>
-                <Loader2 className="w-6 h-6 animate-spin" />
-                분석 중...
-              </>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span>운명의 실타래를 푸는 중...</span>
+                </div>
+                <span className="text-xs font-normal opacity-70">나만의 캐릭터 이미지를 생성하고 있습니다 (약 10-20초 소요)</span>
+              </div>
             ) : (
               <>
                 결과 확인하기

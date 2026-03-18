@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Header, Hero, TrustPoints } from './components/Landing';
 import { SajuForm } from './components/SajuForm';
 import { SajuResultPage } from './components/SajuResult';
+import { TarotSection } from './components/Tarot';
 import { UserInput, SajuResult } from './types';
 import { analyzeSaju } from './services/geminiService';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Page = 'landing' | 'form' | 'result';
+type Page = 'landing' | 'form' | 'result' | 'tarot';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
@@ -16,6 +17,11 @@ export default function App() {
 
   const handleStart = () => {
     setCurrentPage('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTarotStart = () => {
+    setCurrentPage('tarot');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -42,7 +48,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-brand-bg selection:bg-brand-gold/30">
-      <Header onHome={handleHome} />
+      <Header onHome={handleHome} onTarot={handleTarotStart} />
       
       <main className="pt-20">
         <AnimatePresence mode="wait">
@@ -54,7 +60,7 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Hero onStart={handleStart} />
+              <Hero onSajuStart={handleStart} onTarotStart={handleTarotStart} />
               <TrustPoints />
               
               {/* Additional Landing Sections */}
@@ -100,6 +106,18 @@ export default function App() {
               transition={{ duration: 0.5 }}
             >
               <SajuForm onSubmit={handleSubmit} isLoading={isLoading} />
+            </motion.div>
+          )}
+
+          {currentPage === 'tarot' && (
+            <motion.div
+              key="tarot"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+            >
+              <TarotSection />
             </motion.div>
           )}
 

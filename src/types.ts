@@ -25,5 +25,15 @@ export interface SajuResult {
   yearlyFlow: string;
   cautions: string;
   advice: string;
+  characterType: string;
+  characterImageUrl?: string;
   sections: SajuSection[];
+}
+
+export interface TarotResult {
+  cardName: string;
+  meaning: string;
+  interpretation: string;
+  advice: string;
+  imageUrl?: string;
 }

@@ -32,6 +32,12 @@
   -webkit-text-fill-color: transparent;
 }
 
+.gold-gradient-dark {
+  background: linear-gradient(135deg, #8b6d11 0%, #d4af37 50%, #8b6d11 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .gold-button {
   @apply bg-brand-gold hover:bg-brand-gold-light text-brand-bg font-medium transition-all duration-300 shadow-lg shadow-brand-gold/20;
 }
