@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'motion/react';
+import { toPng } from 'html-to-image';
 import { SajuResult, UserInput } from '../types';
 import { 
   Zap, User, Heart, Coins, Briefcase, Calendar, AlertTriangle, Lightbulb,
@@ -17,6 +18,52 @@ const iconMap: Record<string, any> = {
 };
 
 export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, onReset }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadImage = async () => {
+    if (cardRef.current === null) return;
+    
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        backgroundColor: '#0a0c14', // Matches brand-bg
+        style: {
+          borderRadius: '0', // Remove border radius for clean capture if needed, or keep it
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `saju-character-${input.name}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('oops, something went wrong!', err);
+      alert('이미지 생성 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleShare = async () => {
+    if (cardRef.current === null) return;
+
+    try {
+      if (navigator.share) {
+        const dataUrl = await toPng(cardRef.current, { cacheBust: true, backgroundColor: '#0a0c14' });
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], 'saju-result.png', { type: 'image/png' });
+        
+        await navigator.share({
+          title: '명운 - 사주 캐릭터 결과',
+          text: `${input.name}님의 사주 캐릭터: ${result.characterType}`,
+          files: [file],
+        });
+      } else {
+        handleCopyLink();
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+      handleCopyLink();
+    }
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     alert('링크가 복사되었습니다. 친구들에게 공유해보세요!');
@@ -30,7 +77,10 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
         className="space-y-12"
       >
         {/* Character Card Section */}
-        <div className="grid md:grid-cols-5 gap-8 items-center glass-card p-8 md:p-12 overflow-hidden relative">
+        <div 
+          ref={cardRef}
+          className="grid md:grid-cols-5 gap-8 items-center glass-card p-8 md:p-12 overflow-hidden relative"
+        >
           {/* Background Glow */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand-gold/10 rounded-full blur-[80px]" />
           
@@ -47,6 +97,7 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
                   alt={result.characterType}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <div className="w-full h-full bg-brand-slate flex items-center justify-center text-brand-gold/20">
@@ -58,7 +109,7 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
 
           <div className="md:col-span-3 space-y-6">
             <div className="space-y-2">
-              <span className="text-brand-gold font-bold tracking-widest text-xs uppercase">Your Character Type</span>
+              <span className="text-brand-gold font-bold tracking-widest text-xs uppercase">YOUR CHARACTER TYPE</span>
               <h2 className="text-4xl md:text-5xl font-serif font-bold gold-gradient leading-tight">
                 {result.characterType}
               </h2>
@@ -72,6 +123,22 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
               <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium">#명운</span>
             </div>
           </div>
+        </div>
+
+        {/* Quick Actions for Character Card */}
+        <div className="flex justify-center gap-4 -mt-6 relative z-10">
+          <button 
+            onClick={handleDownloadImage}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand-gold/10 border border-brand-gold/30 text-brand-gold hover:bg-brand-gold/20 transition-all text-xs font-bold"
+          >
+            <Download className="w-3.5 h-3.5" /> 이미지 저장
+          </button>
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-brand-ink/70 hover:bg-white/10 transition-all text-xs font-bold"
+          >
+            <Share2 className="w-3.5 h-3.5" /> 결과 공유
+          </button>
         </div>
 
         {/* User Info Summary */}
