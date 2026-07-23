@@ -1,82 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserInput, SajuResult, TarotResult } from "../types";
 
-const MODEL_NAME = "gemini-3.1-pro-preview";
+const MODEL_NAME = "gemini-2.5-flash";
 
-export async function analyzeTarot(cardName: string): Promise<TarotResult> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
-  const prompt = `
-    타로 카드: ${cardName}
-    
-    이 타로 카드가 오늘의 운세로 뽑혔을 때의 해석을 작성해줘.
-    분위기는 신비롭고 따뜻하며, 현대적인 상담 리포트 느낌이어야 해.
-    
-    다음 항목들을 포함해서 JSON 형식으로 응답해줘:
-    1. meaning: 카드의 핵심 키워드와 의미
-    2. interpretation: 오늘의 전반적인 운세 해석
-    3. advice: 오늘을 위한 조언
-    4. imagePrompt: 이 타로 카드를 묘사하는 영어 이미지 생성 프롬프트 (신비롭고 고급스러운 동양 판타지 스타일의 타로 카드 디자인)
-  `;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            meaning: { type: Type.STRING },
-            interpretation: { type: Type.STRING },
-            advice: { type: Type.STRING },
-            imagePrompt: { type: Type.STRING },
-          },
-          required: ["meaning", "interpretation", "advice", "imagePrompt"],
-        },
-      },
-    });
-
-    const result = JSON.parse(response.text || "{}");
-    
-    // Generate Tarot Image
-    let imageUrl = "";
-    try {
-      const imageResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-            {
-              text: `A premium, artistic, mystical oriental fantasy tarot card design for "${cardName}". ${result.imagePrompt}. High quality, cinematic lighting, gold and navy color palette, elegant brush strokes, tarot card border.`,
-            },
-          ],
-        },
-      });
-
-      for (const part of imageResponse.candidates[0].content.parts) {
-        if (part.inlineData) {
-          imageUrl = `data:image/png;base64,${part.inlineData.data}`;
-          break;
-        }
-      }
-    } catch (imgError) {
-      console.error("Tarot image generation failed:", imgError);
-    }
-
-    return {
-      cardName,
-      meaning: result.meaning,
-      interpretation: result.interpretation,
-      advice: result.advice,
-      imageUrl,
-    };
-  } catch (error) {
-    console.error("Tarot analysis failed:", error);
-    throw new Error("타로 분석 중 오류가 발생했습니다. 다시 시도해주세요.");
-  }
-}
-
+/**
+ * Generate image asynchronously without blocking main text output
+ */
 export async function generateAtmosphereImage(prompt: string): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
   
@@ -101,11 +30,164 @@ export async function generateAtmosphereImage(prompt: string): Promise<string> {
     throw new Error("No image data found in response");
   } catch (error) {
     console.error("Image generation failed:", error);
-    // Fallback to a high-quality Unsplash image if generation fails
     return `https://images.unsplash.com/photo-1518544801976-3e159e50e5bb?auto=format&fit=crop&q=80&w=1200`;
   }
 }
 
+/**
+ * Async character image generator
+ */
+export async function generateSajuCharacterImage(characterType: string, imagePrompt: string): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            text: `A premium, artistic, mystical oriental fantasy character portrait representing "${characterType}". ${imagePrompt}. High quality, cinematic lighting, gold and navy color palette, elegant brush strokes.`,
+          },
+        ],
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+  } catch (error) {
+    console.error("Character image generation failed:", error);
+  }
+  return "";
+}
+
+/**
+ * Async tarot card image generator
+ */
+export async function generateTarotCardImage(cardName: string, imagePrompt: string): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            text: `A premium, artistic, mystical oriental fantasy tarot card design for "${cardName}". ${imagePrompt}. High quality, cinematic lighting, gold and navy color palette, elegant brush strokes, tarot card border.`,
+          },
+        ],
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+  } catch (error) {
+    console.error("Tarot image generation failed:", error);
+  }
+  return "";
+}
+
+/**
+ * 2-Card Tarot Analysis - Ultra Fast Text Response
+ */
+export async function analyzeTarotTwoCards(card1Name: string, card2Name: string): Promise<TarotResult> {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+  const prompt = `
+    당신은 신비롭고 전문적인 명품 타로 마스터입니다.
+    사용자가 연속해서 선택한 2장의 타로 카드에 대한 순서 기반 운세 해석을 작성해줘.
+
+    - 첫 번째 카드: ${card1Name} (현재의 상황, 원인, 내면의 상태)
+    - 두 번째 카드: ${card2Name} (미래의 흐름, 해결책, 나아갈 방향)
+
+    해석 분위기: 신비롭고 깊이 있으며, 현대적인 상담 리포트 스타일.
+    
+    다음 항목들을 포함해서 JSON 형식으로 응답해줘:
+    1. card1:
+       - meaning: 첫 번째 카드의 핵심 키워드와 성격
+       - interpretation: 현재 상황과 원인에 대한 상세 해석
+       - advice: 현재 마음가짐에 대한 조언
+       - imagePrompt: 이 첫번째 타로 카드를 묘사하는 영어 이미지 프롬프트 (신비로운 동양 판타지 스타일)
+    2. card2:
+       - meaning: 두 번째 카드의 핵심 키워드와 성격
+       - interpretation: 앞으로 펼쳐질 미래의 흐름과 해결방안 해석
+       - advice: 실천해야 할 행동 지침
+       - imagePrompt: 이 두번째 타로 카드를 묘사하는 영어 이미지 프롬프트 (신비로운 동양 판타지 스타일)
+    3. combinedInterpretation: 첫 번째 카드에서 두 번째 카드로 이어지는 서사적 종합 연계 해석 (두 카드의 시너지와 흐름)
+    4. finalAdvice: 두 카드를 통틀어 전하는 최종 메시지 및 조언
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            card1: {
+              type: Type.OBJECT,
+              properties: {
+                meaning: { type: Type.STRING },
+                interpretation: { type: Type.STRING },
+                advice: { type: Type.STRING },
+                imagePrompt: { type: Type.STRING },
+              },
+              required: ["meaning", "interpretation", "advice", "imagePrompt"],
+            },
+            card2: {
+              type: Type.OBJECT,
+              properties: {
+                meaning: { type: Type.STRING },
+                interpretation: { type: Type.STRING },
+                advice: { type: Type.STRING },
+                imagePrompt: { type: Type.STRING },
+              },
+              required: ["meaning", "interpretation", "advice", "imagePrompt"],
+            },
+            combinedInterpretation: { type: Type.STRING },
+            finalAdvice: { type: Type.STRING },
+          },
+          required: ["card1", "card2", "combinedInterpretation", "finalAdvice"],
+        },
+      },
+    });
+
+    const result = JSON.parse(response.text || "{}");
+
+    return {
+      card1: {
+        cardName: card1Name,
+        roleTitle: "첫 번째 카드: 현재의 상황 & 원인",
+        meaning: result.card1.meaning,
+        interpretation: result.card1.interpretation,
+        advice: result.card1.advice,
+        imagePrompt: result.card1.imagePrompt,
+      },
+      card2: {
+        cardName: card2Name,
+        roleTitle: "두 번째 카드: 미래의 흐름 & 해결책",
+        meaning: result.card2.meaning,
+        interpretation: result.card2.interpretation,
+        advice: result.card2.advice,
+        imagePrompt: result.card2.imagePrompt,
+      },
+      combinedInterpretation: result.combinedInterpretation,
+      finalAdvice: result.finalAdvice,
+    };
+  } catch (error) {
+    console.error("Tarot analysis failed:", error);
+    throw new Error("타로 분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+  }
+}
+
+/**
+ * Saju Analysis - Ultra Fast Text Response
+ */
 export async function analyzeSaju(input: UserInput): Promise<SajuResult> {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
   const prompt = `
@@ -160,31 +242,6 @@ export async function analyzeSaju(input: UserInput): Promise<SajuResult> {
     });
 
     const result = JSON.parse(response.text || "{}");
-    
-    // Generate Character Image
-    let characterImageUrl = "";
-    try {
-      const imageResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-            {
-              text: `A premium, artistic, mystical oriental fantasy character portrait representing "${result.characterType}". ${result.imagePrompt}. High quality, cinematic lighting, gold and navy color palette, elegant brush strokes.`,
-            },
-          ],
-        },
-      });
-
-      for (const part of imageResponse.candidates[0].content.parts) {
-        if (part.inlineData) {
-          characterImageUrl = `data:image/png;base64,${part.inlineData.data}`;
-          break;
-        }
-      }
-    } catch (imgError) {
-      console.error("Image generation failed:", imgError);
-      // Fallback to a placeholder or empty string
-    }
 
     // Map to structured sections for UI
     const sections = [
@@ -198,7 +255,11 @@ export async function analyzeSaju(input: UserInput): Promise<SajuResult> {
       { title: "종합 조언", content: result.advice, icon: "Lightbulb" },
     ];
 
-    return { ...result, characterImageUrl, sections };
+    return { 
+      ...result, 
+      characterImageUrl: undefined, // Generated asynchronously in UI
+      sections 
+    };
   } catch (error) {
     console.error("Saju analysis failed:", error);
     throw new Error("사주 분석 중 오류가 발생했습니다. 다시 시도해주세요.");

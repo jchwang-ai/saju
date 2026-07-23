@@ -1,10 +1,12 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { toPng } from 'html-to-image';
 import { SajuResult, UserInput } from '../types';
+import { generateSajuCharacterImage } from '../services/geminiService';
+import { TypewriterText } from './TypewriterText';
 import { 
   Zap, User, Heart, Coins, Briefcase, Calendar, AlertTriangle, Lightbulb,
-  Download, Share2, RefreshCw
+  Download, Share2, RefreshCw, Loader2, Sparkles
 } from 'lucide-react';
 
 interface SajuResultPageProps {
@@ -19,6 +21,20 @@ const iconMap: Record<string, any> = {
 
 export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, onReset }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [characterImg, setCharacterImg] = useState<string>(result.characterImageUrl || '');
+  const [isImgLoading, setIsImgLoading] = useState<boolean>(!result.characterImageUrl);
+
+  useEffect(() => {
+    if (!characterImg && result.characterType && result.imagePrompt) {
+      setIsImgLoading(true);
+      generateSajuCharacterImage(result.characterType, result.imagePrompt).then((url) => {
+        if (url) setCharacterImg(url);
+        setIsImgLoading(false);
+      }).catch(() => {
+        setIsImgLoading(false);
+      });
+    }
+  }, [result.characterType, result.imagePrompt]);
 
   const handleDownloadImage = async () => {
     if (cardRef.current === null) return;
@@ -26,9 +42,9 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
     try {
       const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
-        backgroundColor: '#0a0c14', // Matches brand-bg
+        backgroundColor: '#0a0c14',
         style: {
-          borderRadius: '0', // Remove border radius for clean capture if needed, or keep it
+          borderRadius: '0',
         }
       });
       const link = document.createElement('a');
@@ -89,16 +105,21 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="aspect-square rounded-2xl overflow-hidden border-2 border-brand-gold/30 shadow-2xl shadow-brand-gold/10"
+              className="aspect-square rounded-2xl overflow-hidden border-2 border-brand-gold/30 shadow-2xl shadow-brand-gold/10 relative group bg-brand-slate flex items-center justify-center"
             >
-              {result.characterImageUrl ? (
+              {characterImg ? (
                 <img 
-                  src={result.characterImageUrl} 
+                  src={characterImg} 
                   alt={result.characterType}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover animate-fade-in"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                 />
+              ) : isImgLoading ? (
+                <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                  <Loader2 className="w-8 h-8 text-brand-gold animate-spin" />
+                  <span className="text-xs text-brand-gold/80 font-medium">AI 초상화 그리는 중...</span>
+                </div>
               ) : (
                 <div className="w-full h-full bg-brand-slate flex items-center justify-center text-brand-gold/20">
                   <User className="w-20 h-20" />
@@ -109,13 +130,15 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
 
           <div className="md:col-span-3 space-y-6">
             <div className="space-y-2">
-              <span className="text-brand-gold font-bold tracking-widest text-xs uppercase">YOUR CHARACTER TYPE</span>
-              <h2 className="text-4xl md:text-5xl font-serif font-bold gold-gradient leading-tight">
-                {result.characterType}
+              <span className="text-brand-gold font-bold tracking-widest text-xs uppercase flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> YOUR CHARACTER TYPE
+              </span>
+              <h2 className="text-3xl md:text-5xl font-serif font-bold gold-gradient leading-tight">
+                <TypewriterText text={result.characterType} speed={25} />
               </h2>
             </div>
-            <p className="text-brand-ink/70 text-lg leading-relaxed italic">
-              "{result.summary}"
+            <p className="text-brand-ink/80 text-base md:text-lg leading-relaxed italic border-l-2 border-brand-gold/30 pl-4 py-1">
+              "<TypewriterText text={result.summary} speed={15} />"
             </p>
             <div className="flex flex-wrap gap-3">
               <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium">#사주캐릭터</span>
@@ -161,18 +184,18 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
+                transition={{ delay: idx * 0.08 }}
                 className="glass-card p-8 hover:bg-white/[0.07] transition-colors"
               >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
-                    <Icon className="w-6 h-6" />
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-brand-gold/10 flex items-center justify-center text-brand-gold">
+                    <Icon className="w-5 h-5" />
                   </div>
                   <h3 className="text-xl font-bold text-brand-gold-light">{section.title}</h3>
                 </div>
-                <p className="text-brand-ink/80 leading-relaxed whitespace-pre-wrap">
-                  {section.content}
-                </p>
+                <div className="text-brand-ink/80 leading-relaxed whitespace-pre-wrap text-sm md:text-base">
+                  <TypewriterText text={section.content} speed={10} />
+                </div>
               </motion.div>
             );
           })}
@@ -182,26 +205,26 @@ export const SajuResultPage: React.FC<SajuResultPageProps> = ({ result, input, o
         <div className="text-center space-y-4 pt-12">
           <p className="text-brand-gold font-medium text-sm">이 결과를 친구들과 공유해보세요!</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
-          >
-            <Download className="w-4 h-4" /> 리포트 저장하기
-          </button>
-          <button 
-            onClick={onReset}
-            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-gold text-brand-bg hover:bg-brand-gold-light transition-colors text-sm font-bold"
-          >
-            <RefreshCw className="w-4 h-4" /> 다시 분석하기
-          </button>
-          <button 
-            onClick={handleCopyLink}
-            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
-          >
-            <Share2 className="w-4 h-4" /> 결과 공유하기
-          </button>
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
+            >
+              <Download className="w-4 h-4" /> 리포트 저장하기
+            </button>
+            <button 
+              onClick={onReset}
+              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-brand-gold text-brand-bg hover:bg-brand-gold-light transition-colors text-sm font-bold"
+            >
+              <RefreshCw className="w-4 h-4" /> 다시 분석하기
+            </button>
+            <button 
+              onClick={handleCopyLink}
+              className="flex items-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm font-bold"
+            >
+              <Share2 className="w-4 h-4" /> 결과 공유하기
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Footer Note */}
         <div className="text-center text-xs text-brand-ink/30 max-w-2xl mx-auto leading-relaxed">

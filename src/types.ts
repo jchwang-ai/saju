@@ -26,14 +26,24 @@ export interface SajuResult {
   cautions: string;
   advice: string;
   characterType: string;
+  imagePrompt?: string;
   characterImageUrl?: string;
   sections: SajuSection[];
 }
 
-export interface TarotResult {
+export interface SingleTarotCardResult {
   cardName: string;
+  roleTitle: string; // e.g. "첫 번째 카드: 현재 상황 & 원인"
   meaning: string;
   interpretation: string;
   advice: string;
+  imagePrompt: string;
   imageUrl?: string;
+}
+
+export interface TarotResult {
+  card1: SingleTarotCardResult;
+  card2: SingleTarotCardResult;
+  combinedInterpretation: string;
+  finalAdvice: string;
 }
